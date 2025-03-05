@@ -1,16 +1,21 @@
 using UnityEngine;
-using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
-    public float orbitSpeed = 30f;
+    // Paramètres de mouvement
     public float moveSpeed = 80f;
     public float jumpForce = 4f;
+
+    // Ajouter cette variable dans la liste des variables au début de la classe
+    public float surfaceOffsetMultiplier = 1.0f; // Multiplicateur pour ajuster finement l'offset
+
+    // Références
     private Transform currentPlanet;
     private Rigidbody2D rb;
     private Animator animator;
+
+    // États
     private bool isJumping = false;
-    private float moveInput;
     private bool firstJumpExecuted = false;
 
     // Événement pour le premier saut
@@ -22,35 +27,73 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
+        // Obtenir les composants nécessaires
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
 
-        // Attacher directement le joueur à la planète de départ
+        // Configurer le Rigidbody
+        if (rb != null)
+        {
+            rb.gravityScale = 0f;
+            rb.freezeRotation = true;
+        }
+
+        // Attacher à la planète de départ
         PlanetSpawner spawner = FindFirstObjectByType<PlanetSpawner>();
         if (spawner != null && spawner.startPlanet != null)
         {
-            AttachToPlanet(spawner.startPlanet.transform);
-            Debug.Log("✅ Joueur attaché à la planète de départ.");
-        }
-        else
-        {
-            Debug.LogError("❌ Pas de planète de départ définie !");
+            // Vérifier que currentPlanet est bien défini
+            currentPlanet = spawner.startPlanet.transform;
+            AttachToPlanet(currentPlanet);
+            Debug.Log($"✅ Joueur attaché à la planète de départ: {currentPlanet.name}");
         }
     }
 
     void Update()
     {
-        moveInput = Input.GetAxis("Horizontal");
-
-        if (currentPlanet != null && !isJumping)
+        // Vérifier que currentPlanet est bien défini
+        if (currentPlanet == null)
         {
-            float rotationAmount = -moveInput * moveSpeed * Time.deltaTime;
-            transform.position = Quaternion.Euler(0, 0, rotationAmount) * (transform.position - currentPlanet.position) + currentPlanet.position;
-
-            animator.SetBool("isMoving", moveInput != 0);
+            Debug.LogWarning("⚠️ currentPlanet est null dans Update!");
+            return;
         }
 
-        if (Input.GetButtonDown("Jump"))
+        // Mouvement du joueur sur la planète
+        if (!isJumping)
+        {
+            float moveInput = Input.GetAxis("Horizontal");
+
+            // Si les axes ne fonctionnent pas, utiliser les touches directement
+            if (moveInput == 0)
+            {
+                if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
+                    moveInput = -1f;
+                else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
+                    moveInput = 1f;
+            }
+
+            if (moveInput != 0)
+            {
+                // Rotation autour de la planète
+                float rotationAmount = -moveInput * moveSpeed * Time.deltaTime;
+                transform.position = Quaternion.Euler(0, 0, rotationAmount) *
+                                    (transform.position - currentPlanet.position) +
+                                    currentPlanet.position;
+
+                // S'assurer que le joueur reste sur la surface
+                KeepPlayerOnPlanetSurface();
+
+                // Animation
+                animator.SetBool("isMoving", true);
+            }
+            else
+            {
+                animator.SetBool("isMoving", false);
+            }
+        }
+
+        // Sauter
+        if (Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space))
         {
             Jump();
         }
@@ -58,87 +101,145 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
-        if (currentPlanet == null || isJumping) return;
+        // Vérifier explicitement que currentPlanet n'est pas null
+        if (currentPlanet == null)
+        {
+            Debug.LogError("❌ Impossible de sauter: currentPlanet est null!");
+            return;
+        }
 
+        if (isJumping)
+        {
+            Debug.Log("⚠️ Déjà en train de sauter");
+            return;
+        }
+
+        Debug.Log($"🟢 Saut depuis la planète {currentPlanet.name}");
+
+        // Activer l'état de saut
         isJumping = true;
-        transform.parent = null;
         animator.SetBool("isJumping", true);
 
+        // Direction du saut (du centre de la planète vers le joueur)
         Vector2 jumpDirection = (transform.position - currentPlanet.position).normalized;
+
+        // Appliquer la force de saut
         rb.linearVelocity = jumpDirection * jumpForce;
 
-        // Marquer que le joueur a sauté (statique)
+        // Marquer le premier saut
         HasJumped = true;
 
-        // Déclencher l'événement lors du premier saut
+        // Déclencher l'événement du premier saut
         if (!firstJumpExecuted)
         {
             firstJumpExecuted = true;
-            Debug.Log("🟢 PREMIER SAUT DÉTECTÉ - OnFirstJump va être appelé");
-
             if (OnFirstJump != null)
             {
                 OnFirstJump();
-                Debug.Log("🟢 OnFirstJump a été appelé avec succès");
-            }
-            else
-            {
-                Debug.LogError("🔴 ERREUR: Personne n'écoute l'événement OnFirstJump!");
+                Debug.Log("🟢 OnFirstJump a été appelé");
             }
         }
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
+        // Atterrissage sur une planète
         if (other.CompareTag("Planet") && isJumping)
         {
-            AttachToPlanet(other.transform);
+            Transform planet = other.transform;
+            AttachToPlanet(planet);
         }
     }
 
-    void AttachToPlanet(Transform newPlanet)
+    void AttachToPlanet(Transform planet)
     {
-        isJumping = false;
-        currentPlanet = newPlanet;
-        transform.parent = newPlanet;
-        rb.linearVelocity = Vector2.zero;
-
-        // ✅ 1️⃣ Trouver la direction du centre de la planète
-        Vector3 directionToCenter = (newPlanet.position - transform.position).normalized;
-
-        // ✅ 2️⃣ Obtenir le rayon exact de la planète
-        CircleCollider2D planetCollider = newPlanet.GetComponent<CircleCollider2D>();
-        if (planetCollider == null)
+        if (planet == null)
         {
-            Debug.LogError("❌ ERREUR: La planète n'a pas de `CircleCollider2D` !");
+            Debug.LogError("❌ Tentative d'attacher à une planète null!");
             return;
         }
-        float planetRadius = planetCollider.radius * newPlanet.transform.localScale.x; // Prend en compte la taille de la planète
 
-        // ✅ 3️⃣ Obtenir la hauteur du joueur (collider)
-        Collider2D playerCollider = GetComponent<Collider2D>();
-        float playerRadius = (playerCollider != null) ? playerCollider.bounds.extents.y : 0.5f; // Valeur par défaut si pas de collider
+        // Reset de l'état
+        isJumping = false;
+        currentPlanet = planet;
+        rb.linearVelocity = Vector2.zero;
 
-        // ✅ 4️⃣ Calculer l’offset pour placer le joueur sur la surface de la planète
-        float surfaceOffset = playerRadius + 0.1f; // Ajout de 0.1f pour éviter de pénétrer la planète
+        // Positionner le joueur sur la surface de la planète
+        KeepPlayerOnPlanetSurface();
 
-        // ✅ 5️⃣ Positionner le joueur SUR la surface de la planète
-        Vector3 targetPosition = newPlanet.position + (-directionToCenter * (planetRadius + surfaceOffset));
-        transform.position = targetPosition;
-
-        // ✅ 6️⃣ Calculer l’angle pour aligner le joueur avec la planète
-        float targetAngle = Mathf.Atan2(directionToCenter.y, directionToCenter.x) * Mathf.Rad2Deg + 90f;
-        transform.rotation = Quaternion.Euler(0, 0, targetAngle);
-
-        // ✅ 7️⃣ Débogage pour voir si la position est correcte
-        Debug.DrawLine(newPlanet.position, targetPosition, Color.green, 2f); // Ligne verte pour voir la position correcte
-
-        // ✅ 8️⃣ Mise à jour de l’animation
+        // Animation
         animator.SetBool("isJumping", false);
+
+        Debug.Log($"✅ Joueur attaché à {planet.name}");
     }
 
+    void KeepPlayerOnPlanetSurface()
+    {
+        if (currentPlanet == null) return;
 
-    // Méthode utilitaire pour forcer un saut (usage externe)
+        // Direction du centre de la planète vers le joueur
+        Vector3 dirFromPlanet = (transform.position - currentPlanet.position).normalized;
+
+        // Utiliser un Raycast depuis le centre de la planète pour détecter la surface
+        RaycastHit2D hit = Physics2D.Raycast(
+            currentPlanet.position,               // Point de départ au centre de la planète
+            dirFromPlanet,                        // Direction vers le joueur
+            20f,                                  // Distance maximale
+            LayerMask.GetMask("Planet")           // Masque de couche (assurez-vous que vos planètes sont sur la couche "Planet")
+        );
+
+        // Si on touche la surface de la planète
+        if (hit.collider != null && hit.collider.transform == currentPlanet)
+        {
+            // Obtenir le point exact de la surface de la planète
+            Vector3 surfacePoint = hit.point;
+
+            // Calculer un décalage pour le joueur (basé sur la taille du sprite)
+            float playerOffset = 0.1f; // Offset minimal
+
+            SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null)
+            {
+                // Utiliser la hauteur du sprite pour un positionnement plus précis
+                playerOffset = spriteRenderer.bounds.extents.y * surfaceOffsetMultiplier;
+            }
+
+            // Position finale du joueur = point de surface + un peu d'offset dans la direction
+            transform.position = surfacePoint + (dirFromPlanet * playerOffset);
+
+            // Debug visuel
+            Debug.DrawLine(currentPlanet.position, surfacePoint, Color.yellow, 0.1f);
+            Debug.DrawLine(surfacePoint, transform.position, Color.blue, 0.1f);
+        }
+        else
+        {
+            // Fallback au cas où le raycast échoue
+            // Garder l'ancienne méthode comme secours
+            float planetRadius = 0f;
+            CircleCollider2D planetCollider = currentPlanet.GetComponent<CircleCollider2D>();
+            if (planetCollider != null)
+            {
+                planetRadius = planetCollider.radius * currentPlanet.transform.localScale.x;
+            }
+
+            float pivotOffset = 0.3f;
+            SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null)
+            {
+                pivotOffset = spriteRenderer.bounds.extents.y * surfaceOffsetMultiplier;
+                pivotOffset = Mathf.Max(pivotOffset, 0.3f);
+            }
+
+            transform.position = currentPlanet.position + dirFromPlanet * (planetRadius + pivotOffset);
+
+            Debug.LogWarning("⚠️ Raycast n'a pas détecté la surface de la planète. Méthode alternative utilisée.");
+        }
+
+        // Orientation perpendiculaire à la surface
+        float angle = Mathf.Atan2(dirFromPlanet.y, dirFromPlanet.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0, 0, angle - 90f);
+    }
+
     public static void SetHasJumped(bool value)
     {
         HasJumped = value;

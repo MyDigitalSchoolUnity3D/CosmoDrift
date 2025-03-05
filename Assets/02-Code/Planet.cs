@@ -82,7 +82,16 @@ public class Planet : MonoBehaviour
         // N'appliquer la taille qu'aux planètes qui ne sont PAS la planète de départ
         if (!isStartPlanet)
         {
+            // Appliquer l'échelle visuelle
             transform.localScale = new Vector3(planetSize, planetSize, planetSize);
+
+            // S'assurer que le collider correspond à la taille visuelle
+            CircleCollider2D circleCollider = GetComponent<CircleCollider2D>();
+            if (circleCollider != null)
+            {
+                // Le rayon reste le même car l'échelle est appliquée automatiquement au collider
+                Debug.Log($"Planète {name}: Taille visuelle = {planetSize}, Rayon du collider = {circleCollider.radius}");
+            }
         }
     }
 
