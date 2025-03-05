@@ -746,7 +746,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   planetPrefab: {fileID: 6465703942335476191, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
   startPlanet: {fileID: 1186330844}
-  maxPlanets: 3
+  maxPlanets: 9
   minSpawnDistance: 6
   minPlanetSize: 3
   maxPlanetSize: 3
