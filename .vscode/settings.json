@@ -56,5 +56,6 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "CosmoDrift.sln"
+    "dotnet.defaultSolution": "CosmoDrift.sln",
+    "git.ignoreLimitWarning": true
 }
