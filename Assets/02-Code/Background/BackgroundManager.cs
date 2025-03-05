@@ -12,7 +12,6 @@ public class BackgroundManager : MonoBehaviour
     private GameObject[] backgrounds = new GameObject[3]; // Instanciations des 3 backgrounds
     private float backgroundHeight;         // Hauteur du background (calculée automatiquement)
     private bool isScrolling = true;
-    private float fadeDuration = 1.0f;        // Durée du fade-in (fixe)
 
     void Start()
     {
@@ -28,7 +27,7 @@ public class BackgroundManager : MonoBehaviour
             return;
         }
 
-        // Instancier 3 backgrounds empilés verticalement
+        // Instancier 3 backgrounds empilés verticalement, sans chevauchement
         for (int i = 0; i < backgrounds.Length; i++)
         {
             Vector3 pos = new Vector3(0, i * GetBackgroundHeight(), 0);
@@ -75,20 +74,17 @@ public class BackgroundManager : MonoBehaviour
 
     /// <summary>
     /// Replace le background qui est en bas en le repositionnant en haut de la pile,
-    /// lui assigne toujours le 3ᵉ sprite et lance un fade-in pour une transition douce.
+    /// lui assigne toujours le 3ᵉ sprite et le remet immédiatement en affichage.
     /// </summary>
     void RepositionBackground()
     {
         // Récupérer le background le plus bas
         GameObject lowestBg = backgrounds[0];
 
-        // On définit un léger chevauchement pour éviter une coupure brutale (overlap)
-        float overlapOffset = 0.5f;
-
-        // Repositionner ce background juste au-dessus du dernier (backgrounds[2])
+        // Repositionner ce background juste au-dessus du dernier background, sans chevauchement
         lowestBg.transform.position = new Vector3(
             0,
-            backgrounds[2].transform.position.y + GetBackgroundHeight() - overlapOffset,
+            backgrounds[2].transform.position.y + GetBackgroundHeight(),
             0
         );
 
@@ -100,13 +96,9 @@ public class BackgroundManager : MonoBehaviour
         }
         backgrounds[2] = lowestBg;
 
-        // Appliquer le 3ᵉ sprite au background replacé (selon ta condition)
+        // Appliquer le 3ᵉ sprite au background replacé
         SpriteRenderer sr = backgrounds[2].GetComponent<SpriteRenderer>();
         sr.sprite = backgroundSprites[2];
-
-        // Commencer le fade-in pour une transition douce
-        sr.color = new Color(1, 1, 1, 0);
+        sr.color = Color.white; // Afficher immédiatement sans fade
     }
-
-    
 }

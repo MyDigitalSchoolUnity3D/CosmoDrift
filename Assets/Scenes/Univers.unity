@@ -148,14 +148,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46899e26ea43ae24fbb5598c59eccb84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  scrollSpeed: 6
   backgroundPrefab: {fileID: 3714219536088849604, guid: c92a7d913b65f0f4eba903e09a038f9e, type: 3}
   backgroundSprites:
-  - {fileID: 21300000, guid: ddcac1fac1f5c8943a30c2ef6b724062, type: 3}
-  - {fileID: 21300000, guid: d9b31ebd60af68c469212c1a9f513e74, type: 3}
+  - {fileID: 21300000, guid: bd3a6eb5d6b74e54595f10d8354fc75f, type: 3}
+  - {fileID: 21300000, guid: f40ba4caedc7ead4ab374bd372db3e76, type: 3}
   - {fileID: 21300000, guid: 35313af049b4a2f42a0325330c51d74a, type: 3}
-  scrollSpeed: 2
-  overlapOffset: 50
-  fadeDuration: 50
 --- !u!4 &272614757
 Transform:
   m_ObjectHideFlags: 0
