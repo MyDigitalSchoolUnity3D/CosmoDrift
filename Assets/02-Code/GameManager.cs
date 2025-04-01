@@ -11,7 +11,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Game Settings")]
     public float scoreMultiplier = 1f;
-
+    
     private bool gameRunning = false;
     private float gameScore = 0f;
     private Transform player;
@@ -24,7 +24,7 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // Trouver les références
+        // Find references
         var playerObject = GameObject.FindGameObjectWithTag("Player");
         if (playerObject != null)
         {
@@ -32,21 +32,21 @@ public class GameManager : MonoBehaviour
         }
         planetSpawner = Object.FindFirstObjectByType<PlanetSpawner>();
 
-        // Configurer l'interface
+        // Configure interface
         if (gameOverPanel != null)
             gameOverPanel.SetActive(false);
 
-        // Configurer le bouton de démarrage
+        // Configure start button
         if (startButton != null)
             startButton.onClick.AddListener(StartGame);
 
-        // S'abonner aux événements
+        // Subscribe to events
         PlayerController.OnFirstJump += OnFirstJump;
     }
 
     void OnDestroy()
     {
-        // Nettoyage
+        // Cleanup
         PlayerController.OnFirstJump -= OnFirstJump;
         if (startButton != null)
             startButton.onClick.RemoveListener(StartGame);
@@ -56,68 +56,58 @@ public class GameManager : MonoBehaviour
     {
         if (gameRunning && player != null)
         {
-            // Mise à jour du score
+            // Update score
             UpdateScore();
 
-            // Vérifier si le joueur est sorti de l'écran
+            // Check if player is off screen
             CheckGameOver();
         }
 
-        // Raccourci clavier pour déboguer - Appuyer sur F pour forcer toutes les planètes à tomber
+        // Keyboard shortcut for debugging - Press F to force all planets to fall
         if (Input.GetKeyDown(KeyCode.F))
         {
-            Debug.Log("Touche F pressée - Forçage de la chute des planètes");
             ForceAllPlanetsToFall();
         }
     }
 
     public void StartGame()
     {
-        // Démarrer le jeu
+        // Start the game
         gameRunning = true;
         gameScore = 0;
         UpdateScoreDisplay();
 
-        // Cacher le bouton de démarrage
+        // Hide the start button
         if (startButton != null)
             startButton.gameObject.SetActive(false);
 
-        // Démarrer le spawner de planètes
+        // Start the planet spawner
         if (planetSpawner != null)
             planetSpawner.StartGame();
 
-        // Notifier les observateurs
+        // Notify observers
         if (OnGameStart != null)
             OnGameStart();
-
-        Debug.Log("Game started by button press - Planets should not fall until first jump");
     }
 
     void OnFirstJump()
     {
-        Debug.Log("🟢 GameManager: OnFirstJump reçu!");
-
-        // Si le jeu n'est pas déjà démarré, le démarrer
+        // If the game isn't already started, start it
         if (!gameRunning)
         {
             StartGame();
         }
 
-        // Dire au spawner que le premier saut a eu lieu
+        // Tell the spawner that the first jump has occurred
         if (planetSpawner != null)
         {
-            Debug.Log("🟢 GameManager: Appel de planetSpawner.OnPlayerFirstJump()");
             planetSpawner.OnPlayerFirstJump();
-        }
-        else
-        {
-            Debug.LogError("🔴 ERREUR: planetSpawner est null dans GameManager!");
         }
     }
 
     void UpdateScore()
     {
-        // Le score est basé sur la hauteur
+        // Score is based on height
         float playerHeight = player.position.y;
         float newScore = Mathf.Max(gameScore, playerHeight * scoreMultiplier);
 
@@ -138,7 +128,7 @@ public class GameManager : MonoBehaviour
 
     void CheckGameOver()
     {
-        // Le joueur perd s'il sort de l'écran par le bas
+        // Player loses if they go off screen at the bottom
         Vector3 screenPos = Camera.main.WorldToViewportPoint(player.position);
         if (screenPos.y < -0.2f)
         {
@@ -152,12 +142,12 @@ public class GameManager : MonoBehaviour
 
         gameRunning = false;
 
-        // Afficher l'écran de game over
+        // Show the game over screen
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
 
-            // Afficher le score final
+            // Display the final score
             Text finalScoreText = gameOverPanel.GetComponentInChildren<Text>();
             if (finalScoreText != null)
             {
@@ -165,28 +155,26 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // Notifier les observateurs
+        // Notify observers
         if (OnGameOver != null)
             OnGameOver();
     }
 
     public void RestartGame()
     {
-        // Recharger la scène courante
+        // Reload the current scene
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    // Méthode de débogage pour forcer la chute des planètes
+    // Debug method to force planets to fall
     public void ForceAllPlanetsToFall()
     {
-        Debug.Log("🔧 GameManager: Forçage de la chute de toutes les planètes");
-
-        // Trouver toutes les planètes par tag
+        // Find all planets by tag
         GameObject[] allPlanets = GameObject.FindGameObjectsWithTag("Planet");
 
         foreach (GameObject planet in allPlanets)
         {
-            // Ne pas faire tomber la planète de départ
+            // Don't make the starting planet fall
             if (planetSpawner != null && planet == planetSpawner.startPlanet)
             {
                 continue;
@@ -195,7 +183,7 @@ public class GameManager : MonoBehaviour
             Planet planetScript = planet.GetComponent<Planet>();
             if (planetScript != null)
             {
-                // Forcer la chute directement
+                // Force the fall directly
                 System.Reflection.FieldInfo field = typeof(Planet).GetField("gameStarted",
                     System.Reflection.BindingFlags.Instance |
                     System.Reflection.BindingFlags.NonPublic);
@@ -203,9 +191,14 @@ public class GameManager : MonoBehaviour
                 if (field != null)
                 {
                     field.SetValue(planetScript, true);
-                    Debug.Log($"🔧 Planète {planet.name} forcée à tomber par reflection");
                 }
             }
         }
+    }
+
+    public void AddScoreBonus(float bonus)
+    {
+        gameScore += bonus;
+        UpdateScoreDisplay();
     }
 }
