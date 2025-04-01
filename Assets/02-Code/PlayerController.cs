@@ -99,7 +99,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void Jump()
+    public void Jump()
     {
         // Vérifier explicitement que currentPlanet n'est pas null
         if (currentPlanet == null)
@@ -150,6 +150,39 @@ public class PlayerController : MonoBehaviour
             AttachToPlanet(planet);
         }
     }
+
+    public void ResetPlayer(Transform startPlanet)
+    {
+        currentPlanet = startPlanet;
+        isJumping = false;
+        firstJumpExecuted = false;
+        SetHasJumped(false);
+
+        // Sécurité rigide : forcer la position et la rotation du joueur
+        Vector3 directionFromCenter = Vector3.up;
+        float planetRadius = currentPlanet.GetComponent<CircleCollider2D>().radius * currentPlanet.localScale.x;
+        float offset = GetComponent<SpriteRenderer>().bounds.extents.y * surfaceOffsetMultiplier;
+        transform.position = currentPlanet.position + directionFromCenter * (planetRadius + offset);
+
+        float angle = Mathf.Atan2(directionFromCenter.y, directionFromCenter.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0, 0, angle - 90f);
+
+        // Reset rigidbody
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+            rb.gravityScale = 0f;
+            rb.freezeRotation = true;
+        }
+
+        animator.SetBool("isJumping", false);
+        animator.SetBool("isMoving", false);
+
+        Debug.Log("✅ Joueur repositionné sur la planète de départ.");
+    }
+
+
 
     void AttachToPlanet(Transform planet)
     {

@@ -100,6 +100,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d781f4812df85a478fceb619eb734a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scrollSpeed: 1
-  resetPositionY: -10
-  startPositionY: 10
+  scrollSpeed: 0.5

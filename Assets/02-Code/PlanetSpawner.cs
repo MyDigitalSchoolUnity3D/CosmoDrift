@@ -10,6 +10,8 @@ public class PlanetSpawner : MonoBehaviour
     public float minSpawnDistance = 6f;
     public float minPlanetSize = 0.8f;
     public float maxPlanetSize = 1.5f;
+    public Vector3 startPlanetInitialPosition; // à stocker au départ
+
 
     // Paramètres de vitesse de chute
     [Header("Fall Speed Configuration")]
@@ -20,24 +22,36 @@ public class PlanetSpawner : MonoBehaviour
     private bool gameStarted = false;
 
     void Start()
+{
+    if (startPlanet != null)
     {
-        // S'assurer que la planète de départ est correctement configurée
-        if (startPlanet != null)
-        {
-            // Ajouter un tag spécial pour la planète de départ
-            startPlanet.tag = "StartPlanet";
-            planets.Add(startPlanet);
+        startPlanetInitialPosition = startPlanet.transform.position;
+        startPlanet.tag = "StartPlanet";
+        planets.Add(startPlanet);
+    }
+}
 
-            // NE PAS modifier la taille de la planète de départ - elle est définie dans Unity
-
-            Debug.Log($"Planète de départ configurée: {startPlanet.name}");
-        }
-        else
+public void ResetSpawner()
+{
+    foreach (GameObject planet in planets)
+    {
+        if (planet != null && planet != startPlanet)
         {
-            Debug.LogError("❌ Pas de planète de départ définie !");
+            Destroy(planet);
         }
     }
 
+    planets.Clear();
+
+    if (startPlanet != null)
+    {
+        startPlanet.transform.position = startPlanetInitialPosition;
+        startPlanet.transform.rotation = Quaternion.identity;
+        planets.Add(startPlanet);
+    }
+
+    gameStarted = false;
+}
     void Update()
     {
         if (!gameStarted) return;

@@ -5,8 +5,7 @@ public class BackgroundManager : MonoBehaviour
 {
     public float scrollSpeed = 2.0f;         
     public GameObject backgroundPrefab;      
-    public Sprite[] backgroundSprites;       
-
+    public Sprite[] backgroundSprites;  
     private GameObject[] backgrounds = new GameObject[3];
     private float backgroundHeight;         
     private bool isScrolling = true;

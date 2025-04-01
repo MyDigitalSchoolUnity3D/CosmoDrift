@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46899e26ea43ae24fbb5598c59eccb84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scrollSpeed: 6
+  scrollSpeed: 1
   backgroundPrefab: {fileID: 3714219536088849604, guid: c92a7d913b65f0f4eba903e09a038f9e, type: 3}
   backgroundSprites:
   - {fileID: 21300000, guid: bd3a6eb5d6b74e54595f10d8354fc75f, type: 3}
@@ -163,7 +163,7 @@ Transform:
   m_GameObject: {fileID: 272614755}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.12999916, y: 0.27000046, z: 0}
+  m_LocalPosition: {x: 2.3192124, y: 5.5479507, z: 37842.938}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -422,7 +422,7 @@ Transform:
   m_GameObject: {fileID: 1453917269}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -375}
+  m_LocalPosition: {x: 2.3192124, y: 5.5479507, z: 37842.938}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
