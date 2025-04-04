@@ -140,3 +140,4 @@ MonoBehaviour:
   rotationSpeed: 10
   fallSpeed: 0
   planetSize: 1
+  preventDestruction: 0
