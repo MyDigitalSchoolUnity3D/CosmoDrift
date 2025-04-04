@@ -6,6 +6,7 @@ public class Planet : MonoBehaviour
     public float rotationSpeed = 10f;
     public float fallSpeed = 0.5f;
     public float planetSize = 1f;
+    public bool preventDestruction = false;  // Empêcher la destruction de la planète
     
     // État
     private bool rotatingRight;
@@ -38,10 +39,11 @@ public class Planet : MonoBehaviour
         // Identifier la planète de départ
         isStartPlanet = gameObject.CompareTag("StartPlanet");
         
-        // Si c'est la planète de départ, pas de rotation
+        // Si c'est la planète de départ, pas de rotation et empêcher la destruction
         if (isStartPlanet)
         {
             rotationSpeed = 0f;
+            preventDestruction = true;  // La planète de départ ne doit pas être détruite
         }
     }
 
@@ -86,6 +88,30 @@ public class Planet : MonoBehaviour
         }
     }
 
+    // Méthode pour forcer la chute de la planète avec une vitesse minimale
+    public void ForceStartFalling()
+    {
+        gameStarted = true;
+        
+        // Assurer une vitesse de chute minimale
+        if (fallSpeed <= 0.1f)
+            fallSpeed = 0.5f;
+            
+        // Si le joueur est encore attaché, le détacher
+        Transform player = GameObject.FindGameObjectWithTag("Player")?.transform;
+        if (player != null && player.parent == transform)
+            player.SetParent(null);
+    }
+    
+    public void StartFalling()
+    {
+        gameStarted = true;
+        
+        // Assurer une vitesse de chute minimale aussi dans cette méthode
+        if (fallSpeed <= 0.1f)
+            fallSpeed = 0.3f;
+    }
+    
     void Update()
     {
         // Rotation (sauf planète de départ)
@@ -100,11 +126,46 @@ public class Planet : MonoBehaviour
         {
             transform.Translate(Vector3.down * fallSpeed * Time.deltaTime, Space.World);
             
-            // Destruction si hors écran
+            // Destruction si hors écran (sauf pour la planète de départ)
             if (IsOutOfScreen())
             {
-                Destroy(gameObject);
+                if (!preventDestruction)
+                {
+                    Destroy(gameObject);
+                }
+                else if (isStartPlanet)
+                {
+                    // Pour la planète de départ, ne pas la détruire mais la cacher
+                    // Elle sera repositionnée correctement lors du reset
+                    gameObject.SetActive(false);
+                }
             }
+        }
+    }
+    
+    // Méthode pour réinitialiser la position si nécessaire
+    private void ResetPosition()
+    {
+        if (!mainCamera) mainCamera = Camera.main;
+        if (!mainCamera) return;
+        
+        // Calculer la position au-dessus de l'écran
+        float camHeight = 2f * mainCamera.orthographicSize;
+        float screenTop = mainCamera.transform.position.y + camHeight/2;
+        Vector3 newPosition = new Vector3(transform.position.x, screenTop + 5f, transform.position.z);
+        transform.position = newPosition;
+    }
+    
+    // Méthode pour réinitialiser la planète
+    public void ResetPlanet()
+    {
+        gameStarted = false;
+        rotatingRight = Random.Range(0, 2) == 0;
+        
+        // Réactiver la planète si elle a été désactivée
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
         }
     }
 
@@ -114,12 +175,7 @@ public class Planet : MonoBehaviour
         if (!mainCamera) return false;
         
         Vector3 viewportPosition = mainCamera.WorldToViewportPoint(transform.position);
-        // Vérifier si la planète est complètement sortie par le bas (-0.2 pour laisser une marge)
-        return viewportPosition.y < -0.2f;
-    }
-
-    public void StartFalling()
-    {
-        gameStarted = true;
+        // Augmentons la marge pour s'assurer que les planètes sont bien détruites
+        return viewportPosition.y < -0.3f;
     }
 }

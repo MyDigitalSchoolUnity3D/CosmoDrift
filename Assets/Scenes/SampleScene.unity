@@ -579,8 +579,9 @@ MonoBehaviour:
   moveSpeed: 80
   jumpForce: 4
   surfaceOffsetMultiplier: 1
-  landingSound: {fileID: 0}
-  jumpSound: {fileID: 0}
+  landingSound: {fileID: 8300000, guid: 4b4dd7245f6104c8c8eb07ccf6b386ed, type: 3}
+  jumpSound: {fileID: 8300000, guid: 2c5292ba5cf254919a6b9e2b18e04f49, type: 3}
+  soundVolume: 1
 --- !u!50 &279575233
 Rigidbody2D:
   serializedVersion: 5
@@ -643,7 +644,7 @@ CircleCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
-  m_Radius: 0.5
+  m_Radius: 1.22
 --- !u!212 &279575235
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1354,12 +1355,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   planetPrefab: {fileID: 6465703942335476191, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
   startPlanet: {fileID: 1442377594}
-  maxPlanets: 3
+  startPlanetPrefab: {fileID: 0}
+  maxPlanets: 5
   minSpawnDistance: 5
   minPlanetSize: 0.2
-  maxPlanetSize: 1.3
-  minFallSpeed: 0.2
-  maxFallSpeed: 1.2
+  maxPlanetSize: 0.66
+  minFallSpeed: 0.64
+  maxFallSpeed: 1.84
   arcadeMode: 1
   columns: 3
   verticalSpacing: 4
@@ -1368,6 +1370,12 @@ MonoBehaviour:
   planetTextures:
   - {fileID: 21300000, guid: 7d2cee50e1f934f33aed91cf7bf2f6ec, type: 3}
   - {fileID: 21300000, guid: d32db3468ebbd414cb245d1b1a4dc0b9, type: 3}
+  - {fileID: 21300000, guid: 3509fcadfe9b64c499ed0aa7a8a8d6f5, type: 3}
+  - {fileID: 21300000, guid: 4817552ea7c9f44739746192e9033b1a, type: 3}
+  - {fileID: 21300000, guid: fbd91f4dc17c84d66828287e57ab6bd4, type: 3}
+  - {fileID: 21300000, guid: 904d58e17773f4fa7ab694d6c0f2e684, type: 3}
+  - {fileID: 21300000, guid: cc1d6870cb5eb4bb189917d489e0f79e, type: 3}
+  - {fileID: 21300000, guid: 2735a3c5ef0b346c3a39ac2bf69d3bfa, type: 3}
 --- !u!4 &676934458
 Transform:
   m_ObjectHideFlags: 0
@@ -2284,7 +2292,9 @@ MonoBehaviour:
   scrollSpeed: 2
   backgroundPrefab: {fileID: 3714219536088849604, guid: c92a7d913b65f0f4eba903e09a038f9e, type: 3}
   backgroundSprites:
-  - {fileID: 0}
+  - {fileID: 21300000, guid: bd3a6eb5d6b74e54595f10d8354fc75f, type: 3}
+  - {fileID: 21300000, guid: f40ba4caedc7ead4ab374bd372db3e76, type: 3}
+  - {fileID: 21300000, guid: 35313af049b4a2f42a0325330c51d74a, type: 3}
 --- !u!4 &1846286553
 Transform:
   m_ObjectHideFlags: 0

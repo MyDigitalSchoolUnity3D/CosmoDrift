@@ -7,6 +7,10 @@ public class PlanetSpawner : MonoBehaviour
     public GameObject planetPrefab;
     public GameObject startPlanet;
     
+    // Ajouter un préfab pour la planète de départ (ou utiliser le préfab normal)
+    [Header("Start Planet")]
+    public GameObject startPlanetPrefab; // Préfab optionnel pour la planète de départ
+    
     // Configuration générale
     [Header("Configuration générale")]
     public int maxPlanets = 3;
@@ -47,6 +51,13 @@ public class PlanetSpawner : MonoBehaviour
             startPlanetInitialPosition = startPlanet.transform.position;
             startPlanet.tag = "StartPlanet";
             planets.Add(startPlanet);
+            
+            // S'assurer que la planète de départ ne sera pas détruite hors de l'écran
+            Planet startPlanetComponent = startPlanet.GetComponent<Planet>();
+            if (startPlanetComponent != null)
+            {
+                startPlanetComponent.preventDestruction = true;
+            }
         }
     }
 
@@ -68,7 +79,7 @@ public class PlanetSpawner : MonoBehaviour
         }
     }
 
-    public void StartGame()
+    public void StartGame(bool startPlanetFalls = false)
     {
         gameStarted = true;
         spawnCounter = 0;
@@ -78,17 +89,38 @@ public class PlanetSpawner : MonoBehaviour
         {
             SpawnPlanet();
         }
+        
+        // Faire tomber explicitement toutes les planètes
+        foreach (GameObject planet in planets)
+        {
+            if (planet != null && planet != startPlanet)
+            {
+                Planet planetComponent = planet.GetComponent<Planet>();
+                if (planetComponent != null)
+                    planetComponent.StartFalling();
+            }
+        }
+        
+        // Optionnellement, faire tomber la planète de départ aussi
+        if (startPlanetFalls && startPlanet != null)
+        {
+            Planet startPlanetComponent = startPlanet.GetComponent<Planet>();
+            if (startPlanetComponent != null)
+                startPlanetComponent.StartFalling();
+        }
+        
+        // Enregistrer sur le handler pour le premier saut
+        PlayerController.OnFirstJump += OnPlayerFirstJump;
     }
 
     public void OnPlayerFirstJump()
     {
-        for (int i = 0; i < planets.Count; i++)
+        // Cette méthode ne fait tomber QUE la planète de départ
+        if (startPlanet != null)
         {
-            GameObject planet = planets[i];
-            if (planet != null && planet != startPlanet)
-            {
-                planet.GetComponent<Planet>()?.StartFalling();
-            }
+            Planet startPlanetComponent = startPlanet.GetComponent<Planet>();
+            if (startPlanetComponent != null)
+                startPlanetComponent.ForceStartFalling();
         }
     }
 
@@ -112,8 +144,8 @@ public class PlanetSpawner : MonoBehaviour
             newPlanet.tag = "Planet";
             planetComponent.Initialize(rotationSpeed, size, fallSpeed, texture);
             
-            // Faire tomber immédiatement si le jeu est déjà en cours
-            if (gameStarted && PlayerController.HasJumped)
+            // Si le jeu est déjà commencé, faire tomber la planète immédiatement
+            if (gameStarted)
             {
                 planetComponent.StartFalling();
             }
@@ -171,8 +203,58 @@ public class PlanetSpawner : MonoBehaviour
         return false;
     }
 
+    // Méthode pour recréer la planète de départ si nécessaire
+    private void RecreateStartPlanetIfNeeded()
+    {
+        // Ne recréer la planète que si elle est vraiment nulle (détruite complètement)
+        // et non pas seulement désactivée
+        if (startPlanet == null)
+        {
+            Debug.Log("⚠️ La planète de départ a été détruite, recréation en cours...");
+            
+            // Utiliser le préfab spécifique s'il existe, sinon utiliser le préfab normal
+            GameObject prefabToUse = startPlanetPrefab != null ? startPlanetPrefab : planetPrefab;
+            
+            // Recréer la planète à sa position initiale
+            startPlanet = Instantiate(prefabToUse, startPlanetInitialPosition, Quaternion.identity);
+            startPlanet.tag = "StartPlanet";
+            
+            // Configurer la planète recréée
+            Planet planetComponent = startPlanet.GetComponent<Planet>();
+            if (planetComponent != null)
+            {
+                planetComponent.preventDestruction = true;
+                planetComponent.Initialize(0f, 1f, 0f);
+                planetComponent.ApplyPlanetSize();
+            }
+            
+            Debug.Log("✅ Planète de départ recréée avec succès");
+        }
+        else if (!startPlanet.activeSelf)
+        {
+            // Si la planète existe mais est désactivée, on la réactive
+            startPlanet.SetActive(true);
+            startPlanet.transform.position = startPlanetInitialPosition;
+            startPlanet.transform.rotation = Quaternion.identity;
+            
+            Planet planetComponent = startPlanet.GetComponent<Planet>();
+            if (planetComponent != null)
+            {
+                planetComponent.ResetPlanet();
+            }
+            
+            Debug.Log("✅ Planète de départ réactivée");
+        }
+    }
+
     public void ResetSpawner()
     {
+        // Désabonner du handler pour éviter les problèmes
+        PlayerController.OnFirstJump -= OnPlayerFirstJump;
+        
+        // Recréer la planète de départ si elle a été détruite lors du reset
+        RecreateStartPlanetIfNeeded();
+        
         // Supprimer toutes les planètes sauf la planète de départ
         for (int i = planets.Count - 1; i >= 0; i--)
         {
@@ -180,6 +262,10 @@ public class PlanetSpawner : MonoBehaviour
             if (planet != null && planet != startPlanet)
             {
                 Destroy(planet);
+                planets.RemoveAt(i);
+            }
+            else if (planet == null)
+            {
                 planets.RemoveAt(i);
             }
         }
@@ -192,6 +278,13 @@ public class PlanetSpawner : MonoBehaviour
             startPlanet.transform.position = startPlanetInitialPosition;
             startPlanet.transform.rotation = Quaternion.identity;
             planets.Add(startPlanet);
+            
+            // Réinitialiser l'état de la planète de départ
+            Planet startPlanetComponent = startPlanet.GetComponent<Planet>();
+            if (startPlanetComponent != null)
+            {
+                startPlanetComponent.ResetPlanet();
+            }
         }
         
         gameStarted = false;

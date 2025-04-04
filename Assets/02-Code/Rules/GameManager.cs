@@ -79,69 +79,40 @@ public class GameManager : MonoBehaviour
 
     private void StartGame()
     {
-        try {
-            Debug.Log("🔄 Starting game sequence...");
-            
+        try
+        {
             // Reset the player first, before setting game flags
-            if (playerController == null)
-            {
-                Debug.LogError("❌ playerController is null!");
+            if (playerController == null || planetSpawner == null || planetSpawner.startPlanet == null)
                 return;
-            }
-            
-            if (planetSpawner == null)
-            {
-                Debug.LogError("❌ planetSpawner is null!");
-                return;
-            }
-            
-            if (planetSpawner.startPlanet == null)
-            {
-                Debug.LogError("❌ startPlanet is null!");
-                return;
-            }
-            
+
             // First just update UI to show we're starting
             HideMenuUI();
             scoreButton.gameObject.SetActive(true);
-            
+
             // Now reset the player
-            Debug.Log("🔄 Resetting player position...");
             playerController.ResetPlayer(planetSpawner.startPlanet.transform);
-            
+
             // Update game state
             gameRunning = true;
             gameScore = 0;
             UpdateScoreDisplay();
+
+            // Start planets AFTER player is reset - simplification: toutes les planètes commencent à tomber sauf la planète de départ
+            planetSpawner.StartGame(startPlanetFalls: false);
+
+            // Marquer que le jeu a commencé
+            PlayerController.SetHasJumped(false);  // Le premier saut n'a pas encore eu lieu
             
-            // Start planets AFTER player is reset
-            Debug.Log("🔄 Starting planet spawner...");
-            try {
-                planetSpawner.StartGame();
-            }
-            catch (System.Exception e) {
-                Debug.LogError("❌ Error in planetSpawner.StartGame(): " + e.ToString());
-                throw; // Rethrow to be caught by outer try/catch
-            }
-            
-            // Important: Call this method to make planets fall
-            Debug.Log("🔄 Making planets start falling...");
-            planetSpawner.OnPlayerFirstJump();
-            
-            // Set jump flag 
-            PlayerController.SetHasJumped(true);
-            
-            Debug.Log("✅ Game started successfully!");
+            Debug.Log("Jeu démarré - Attente du premier saut du joueur");
         }
         catch (System.Exception e)
         {
-            Debug.LogError("❌ Error starting game: " + e.ToString());
-            // Full error details
-            Debug.LogException(e);
+            // Log de l'erreur pour faciliter le debug
+            Debug.LogError($"Erreur lors du démarrage du jeu: {e.Message}\n{e.StackTrace}");
             
             // Reset game state if we hit an error
             gameStartedOnce = false;
-            
+
             // Show UI again
             ShowMenuUI();
             scoreButton.gameObject.SetActive(false);
@@ -150,6 +121,12 @@ public class GameManager : MonoBehaviour
 
     void CheckPlayerOutOfBounds()
     {
+        if (player == null || Camera.main == null)
+        {
+            Debug.LogError("❌ Player ou Camera.main est null dans CheckPlayerOutOfBounds()");
+            return;
+        }
+        
         Vector3 viewPos = Camera.main.WorldToViewportPoint(player.position);
         if (viewPos.x < 0 || viewPos.x > 1 || viewPos.y < 0 || viewPos.y > 1)
         {
@@ -170,14 +147,28 @@ public class GameManager : MonoBehaviour
         gameScore = 0;
         UpdateScoreDisplay();
 
-        // 🔁 Réinitialiser les planètes
+        // 🔁 Réinitialiser les planètes en premier (pour recréer la planète de départ si nécessaire)
         if (planetSpawner != null)
             planetSpawner.ResetSpawner();
+        else
+            Debug.LogError("❌ PlanetSpawner est null lors de ReturnToMenu()");
 
-        // 🔁 Réinitialiser le joueur
-        if (playerController != null && planetSpawner != null)
+        // 🔁 Vérifier que la planète de départ existe maintenant
+        if (planetSpawner != null && planetSpawner.startPlanet != null)
         {
-            playerController.ResetPlayer(planetSpawner.startPlanet.transform);
+            // Réinitialiser le joueur seulement si on a la planète de départ
+            if (playerController != null)
+            {
+                playerController.ResetPlayer(planetSpawner.startPlanet.transform);
+            }
+            else
+            {
+                Debug.LogError("❌ PlayerController est null lors de ReturnToMenu()");
+            }
+        }
+        else
+        {
+            Debug.LogError("❌ Planète de départ toujours null après ResetSpawner()");
         }
 
         PlayerController.SetHasJumped(false);
