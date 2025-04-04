@@ -129,7 +129,7 @@ public class GameManager : MonoBehaviour
             gameStartedOnce = false;
             ShowMenuUI();
             scoreButton.gameObject.SetActive(false);
-            Debug.LogError("❌ Erreur au démarrage : " + e.Message);
+            Debug.LogError("Erreur au démarrage : " + e.Message);
         }
     }
 

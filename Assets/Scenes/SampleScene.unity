@@ -1485,7 +1485,7 @@ MonoBehaviour:
   planetPrefab: {fileID: 6465703942335476191, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
   startPlanet: {fileID: 1442377594}
   startPlanetPrefab: {fileID: 0}
-  maxPlanets: 2
+  maxPlanets: 5
   minSpawnDistance: 5
   minPlanetSize: 0.2
   maxPlanetSize: 0.66
@@ -1780,8 +1780,8 @@ MonoBehaviour:
   startButton: {fileID: 1777731622}
   leaveButton: {fileID: 1744459051}
   scoreButton: {fileID: 1601451399}
-  bestScoreTextButton: {fileID: 730981531}
-  bestScoreDecor: {fileID: 162367309}
+  bestScoreTextButton: {fileID: 162367311}
+  bestScoreDecor: {fileID: 730981529}
   scoreMultiplier: 1
   difficulty: 1
   difficultyIncreaseRate: 0.1
