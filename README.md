@@ -12,7 +12,7 @@ Bienvenue dans **Cosmo Drift**, un jeu d’arcade spatial où vous sautez de pla
   - Les planètes tombent plus vite
   - Elles sont de plus en plus rares
   - Le fond défile plus rapidement
-- 🌌 Fond dynamique géré par le `BackgroundManager`
+- 🌌 Fond dynamique 
 - 🎮 Contrôles simples : **flèches directionnelles** / **A/D** pour tourner autour des planètes, **Espace** pour sauter
 - 💾 Sauvegarde automatique du meilleur score
 
@@ -63,7 +63,7 @@ _Un diagramme UML est disponible dans le projet pour visualiser l'ensemble des r
 ## ✅ Crédits
 
 - Projet créé avec Unity
-- Design gameplay & programmation : **[AUbin et Amine]**
+- Design gameplay & programmation : **[Aubin et Amine]**
 - UI et logique conçues pour être facilement modifiables et étendues
 
 ---
