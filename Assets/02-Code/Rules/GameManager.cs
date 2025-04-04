@@ -14,14 +14,27 @@ public class GameManager : MonoBehaviour
     [Header("Game Settings")]
     public float scoreMultiplier = 1f;
 
+    [Header("Difficulté")]
+    public float difficulty = 1f;
+    public float difficultyIncreaseRate = 0.05f;
+    public float maxDifficulty = 5f;
+
     private bool gameRunning = false;
-    private bool gameStartedOnce = false; // Pour éviter plusieurs déclenchements
+    private bool gameStartedOnce = false;
     private float gameScore = 0f;
     private int bestScore = 0;
 
     private Transform player;
     private PlayerController playerController;
     private PlanetSpawner planetSpawner;
+    private BackgroundManager backgroundManager;
+
+    // Valeurs d'origine à restaurer au reset
+    private int initialMaxPlanets;
+    private float initialMinFallSpeed;
+    private float initialMaxFallSpeed;
+    private float initialSpawnInterval;
+    private float initialBackgroundScrollSpeed;
 
     void Start()
     {
@@ -33,6 +46,21 @@ public class GameManager : MonoBehaviour
         }
 
         planetSpawner = FindFirstObjectByType<PlanetSpawner>();
+        backgroundManager = FindFirstObjectByType<BackgroundManager>();
+
+        if (planetSpawner != null)
+        {
+            initialMaxPlanets = planetSpawner.maxPlanets;
+            initialMinFallSpeed = planetSpawner.minFallSpeed;
+            initialMaxFallSpeed = planetSpawner.maxFallSpeed;
+            initialSpawnInterval = planetSpawner.spawnInterval;
+        }
+
+        if (backgroundManager != null)
+        {
+            initialBackgroundScrollSpeed = backgroundManager.scrollSpeed;
+        }
+
         startButton.onClick.AddListener(TriggerStart);
         leaveButton.onClick.AddListener(QuitGame);
 
@@ -46,20 +74,19 @@ public class GameManager : MonoBehaviour
     {
         if (!gameRunning && !gameStartedOnce && Input.GetKeyDown(KeyCode.Space))
         {
-            // Espace fait le même effet que le bouton start
             TriggerStart();
         }
 
         if (gameRunning && player != null)
         {
             UpdateScore();
+            UpdateDifficulty();
             CheckPlayerOutOfBounds();
         }
     }
 
     public void TriggerStart()
     {
-        // Si le jeu a déjà commencé, on ne relance pas
         if (gameStartedOnce || playerController == null || planetSpawner == null)
             return;
 
@@ -76,32 +103,41 @@ public class GameManager : MonoBehaviour
 
             HideMenuUI();
             scoreButton.gameObject.SetActive(true);
-            playerController.ResetPlayer(planetSpawner.startPlanet.transform);
-            gameRunning = true;
-            gameScore = 0;
-            UpdateScoreDisplay();
-            planetSpawner.StartGame(startPlanetFalls: false);
 
-            // Marquer que le jeu a commencé
-            PlayerController.SetHasJumped(false);  // Le premier saut n'a pas encore eu lieu
-            
+            // Réinitialisation
+            gameScore = 0f;
+            difficulty = 1f;
+            gameRunning = true;
+
+            planetSpawner.ResetSpawner();
+            planetSpawner.maxPlanets = initialMaxPlanets;
+            planetSpawner.minFallSpeed = initialMinFallSpeed;
+            planetSpawner.maxFallSpeed = initialMaxFallSpeed;
+            planetSpawner.spawnInterval = initialSpawnInterval;
+
+            if (backgroundManager != null)
+                backgroundManager.scrollSpeed = initialBackgroundScrollSpeed;
+
+            planetSpawner.StartGame(startPlanetFalls: false);
+            playerController.ResetPlayer(planetSpawner.startPlanet.transform);
+
+            PlayerController.SetHasJumped(false);
+            UpdateScoreDisplay();
         }
         catch (System.Exception e)
-        {            
-            // Reset le jeu si system.exception
+        {
             gameStartedOnce = false;
             ShowMenuUI();
             scoreButton.gameObject.SetActive(false);
+            Debug.LogError("❌ Erreur au démarrage : " + e.Message);
         }
     }
 
     void CheckPlayerOutOfBounds()
     {
         if (player == null || Camera.main == null)
-        {
             return;
-        }
-        
+
         Vector3 viewPos = Camera.main.WorldToViewportPoint(player.position);
         if (viewPos.x < 0 || viewPos.x > 1 || viewPos.y < 0 || viewPos.y > 1)
         {
@@ -113,34 +149,39 @@ public class GameManager : MonoBehaviour
 
     void ReturnToMenu()
     {
-        // 🔁 Réinitialiser état du jeu
         gameRunning = false;
         gameStartedOnce = false;
-        gameScore = 0;
+        gameScore = 0f;
+        difficulty = 1f;
+
         UpdateScoreDisplay();
 
-        // Réinitialiser les planètes en premier (pour recréer la planète de départ si nécessaire)
         if (planetSpawner != null)
+        {
             planetSpawner.ResetSpawner();
 
-        // Vérifier que la planète de départ existe maintenant
-        if (planetSpawner != null && planetSpawner.startPlanet != null)
+            // Rétablir les valeurs par défaut
+            planetSpawner.maxPlanets = initialMaxPlanets;
+            planetSpawner.minFallSpeed = initialMinFallSpeed;
+            planetSpawner.maxFallSpeed = initialMaxFallSpeed;
+            planetSpawner.spawnInterval = initialSpawnInterval;
+        }
+
+        if (backgroundManager != null)
         {
-            // Réinitialiser le joueur seulement si on a la planète de départ
-            if (playerController != null)
-            {
-                playerController.ResetPlayer(planetSpawner.startPlanet.transform);
-            }
-           
+            backgroundManager.scrollSpeed = initialBackgroundScrollSpeed;
+        }
+
+        if (planetSpawner != null && planetSpawner.startPlanet != null && playerController != null)
+        {
+            playerController.ResetPlayer(planetSpawner.startPlanet.transform);
         }
 
         PlayerController.SetHasJumped(false);
 
-        // Réinitialiser l’UI
         scoreButton.gameObject.SetActive(false);
         ShowMenuUI();
 
-        // Reconnecter le bouton Start (au cas où)
         startButton.onClick.RemoveAllListeners();
         startButton.onClick.AddListener(TriggerStart);
     }
@@ -173,6 +214,24 @@ public class GameManager : MonoBehaviour
         if (scoreText != null)
         {
             scoreText.text = Mathf.FloorToInt(gameScore).ToString();
+        }
+    }
+
+    void UpdateDifficulty()
+    {
+        difficulty += Time.deltaTime * difficultyIncreaseRate;
+        difficulty = Mathf.Clamp(difficulty, 1f, maxDifficulty);
+
+        if (planetSpawner != null)
+        {
+    
+            planetSpawner.minFallSpeed = initialMinFallSpeed * difficulty;
+            planetSpawner.maxFallSpeed = initialMaxFallSpeed * difficulty;
+        }
+
+        if (backgroundManager != null)
+        {
+            backgroundManager.scrollSpeed = initialBackgroundScrollSpeed + difficulty * 1f;
         }
     }
 

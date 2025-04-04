@@ -3,7 +3,7 @@ using System.Collections;
 
 public class BackgroundManager : MonoBehaviour
 {
-    public float scrollSpeed = 2.0f;         
+    public float scrollSpeed = 1f;
     public GameObject backgroundPrefab;      
     public Sprite[] backgroundSprites;  
     private GameObject[] backgrounds = new GameObject[3];
