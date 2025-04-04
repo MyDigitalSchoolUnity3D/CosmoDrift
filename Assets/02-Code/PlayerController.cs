@@ -2,24 +2,35 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    // Movement parameters
     public float moveSpeed = 80f;
     public float jumpForce = 4f;
     public float surfaceOffsetMultiplier = 1.0f;
+
+    // References
     private Transform currentPlanet;
     private Rigidbody2D rb;
     private Animator animator;
+
+    // States
     private bool isJumping = false;
     private bool firstJumpExecuted = false;
+
+    // Event for the first jump
     public delegate void PlayerActionHandler();
     public static event PlayerActionHandler OnFirstJump;
+
+    // Static variable for GameManager
     public static bool HasJumped { get; private set; } = false;
+
     [Header("Audio")]
     public AudioClip landingSound;
     public AudioClip jumpSound;
-    private AudioSource audioSource;
     [Range(0f, 1f)]
     public float soundVolume = 1f;
-    
+
+    private AudioSource audioSource; // Single AudioSource for all sounds
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -31,7 +42,7 @@ public class PlayerController : MonoBehaviour
             rb.freezeRotation = true;
         }
 
-        //planète de depart
+        // Attach to the starting planet
         PlanetSpawner spawner = FindFirstObjectByType<PlanetSpawner>();
         if (spawner != null && spawner.startPlanet != null)
         {
@@ -39,6 +50,7 @@ public class PlayerController : MonoBehaviour
             InitialPositioningOnStartPlanet();
         }
 
+        // Setup a single AudioSource
         SetupAudio();
     }
     
@@ -72,7 +84,7 @@ public class PlayerController : MonoBehaviour
     {
         if (currentPlanet == null) return;
 
-        // Mouvement du joueur sur la planète
+        // Player movement on the planet
         if (!isJumping)
         {
             float moveInput = Input.GetAxis("Horizontal");
@@ -132,7 +144,8 @@ public class PlayerController : MonoBehaviour
 
         isJumping = true;
         animator.SetBool("isJumping", true);
-        
+
+        // Play jump sound
         PlaySound(jumpSound);
 
         Vector2 jumpDirection = (transform.position - currentPlanet.position).normalized;
@@ -166,6 +179,7 @@ public class PlayerController : MonoBehaviour
         currentPlanet = planet;
         rb.linearVelocity = Vector2.zero;
 
+        // Play landing sound
         PlaySound(landingSound);
 
         transform.SetParent(planet);
@@ -259,22 +273,55 @@ public class PlayerController : MonoBehaviour
 
     private void SetupAudio()
     {
+        // Use a single AudioSource attached to the GameObject
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
         }
-        
+
         audioSource.playOnAwake = false;
-        audioSource.spatialBlend = 0f;
+        audioSource.spatialBlend = 0f; // 2D sound
         audioSource.volume = soundVolume;
+
+        if (audioSource == null)
+        {
+            Debug.LogError("Failed to create or find an AudioSource component.");
+        }
+        else
+        {
+            Debug.Log("AudioSource successfully set up.");
+        }
     }
 
     private void PlaySound(AudioClip clip)
     {
-        if (clip == null || audioSource == null) return;
-        
-        audioSource.volume = soundVolume;
+        if (clip == null)
+        {
+            Debug.LogWarning("AudioClip is null. Please assign a valid AudioClip.");
+            return;
+        }
+
+        if (audioSource == null)
+        {
+            Debug.LogError("AudioSource is missing. Ensure the AudioSource is properly set up.");
+            return;
+        }
+
+        if (!audioSource.enabled)
+        {
+            Debug.LogWarning("AudioSource is disabled. Enabling it now.");
+            audioSource.enabled = true;
+        }
+
+        if (!audioSource.isActiveAndEnabled)
+        {
+            Debug.LogError("AudioSource is not active or enabled. Cannot play sound.");
+            return;
+        }
+
+        // Play the sound using the single AudioSource
+        Debug.Log($"Playing sound: {clip.name}");
         audioSource.PlayOneShot(clip);
     }
 }
