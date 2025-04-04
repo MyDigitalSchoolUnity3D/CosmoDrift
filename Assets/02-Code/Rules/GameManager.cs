@@ -79,23 +79,74 @@ public class GameManager : MonoBehaviour
 
     private void StartGame()
     {
-        gameRunning = true;
-        gameScore = 0;
-        UpdateScoreDisplay();
-
-        HideMenuUI();
-        scoreButton.gameObject.SetActive(true);
-
-        planetSpawner.StartGame();
-        planetSpawner.OnPlayerFirstJump(); 
-        PlayerController.SetHasJumped(true); 
-
-        playerController.ResetPlayer(planetSpawner.startPlanet.transform);
-        playerController.Jump();
-
-        Debug.Log("✅ Jeu démarré !");
+        try {
+            Debug.Log("🔄 Starting game sequence...");
+            
+            // Reset the player first, before setting game flags
+            if (playerController == null)
+            {
+                Debug.LogError("❌ playerController is null!");
+                return;
+            }
+            
+            if (planetSpawner == null)
+            {
+                Debug.LogError("❌ planetSpawner is null!");
+                return;
+            }
+            
+            if (planetSpawner.startPlanet == null)
+            {
+                Debug.LogError("❌ startPlanet is null!");
+                return;
+            }
+            
+            // First just update UI to show we're starting
+            HideMenuUI();
+            scoreButton.gameObject.SetActive(true);
+            
+            // Now reset the player
+            Debug.Log("🔄 Resetting player position...");
+            playerController.ResetPlayer(planetSpawner.startPlanet.transform);
+            
+            // Update game state
+            gameRunning = true;
+            gameScore = 0;
+            UpdateScoreDisplay();
+            
+            // Start planets AFTER player is reset
+            Debug.Log("🔄 Starting planet spawner...");
+            try {
+                planetSpawner.StartGame();
+            }
+            catch (System.Exception e) {
+                Debug.LogError("❌ Error in planetSpawner.StartGame(): " + e.ToString());
+                throw; // Rethrow to be caught by outer try/catch
+            }
+            
+            // Important: Call this method to make planets fall
+            Debug.Log("🔄 Making planets start falling...");
+            planetSpawner.OnPlayerFirstJump();
+            
+            // Set jump flag 
+            PlayerController.SetHasJumped(true);
+            
+            Debug.Log("✅ Game started successfully!");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("❌ Error starting game: " + e.ToString());
+            // Full error details
+            Debug.LogException(e);
+            
+            // Reset game state if we hit an error
+            gameStartedOnce = false;
+            
+            // Show UI again
+            ShowMenuUI();
+            scoreButton.gameObject.SetActive(false);
+        }
     }
-
 
     void CheckPlayerOutOfBounds()
     {
@@ -110,38 +161,37 @@ public class GameManager : MonoBehaviour
     }
 
     void ReturnToMenu()
-{
-    Debug.Log("↩️ Retour au menu demandé");
-
-    // 🔁 Réinitialiser état du jeu
-    gameRunning = false;
-    gameStartedOnce = false;
-    gameScore = 0;
-    UpdateScoreDisplay();
-
-    // 🔁 Réinitialiser les planètes
-    if (planetSpawner != null)
-        planetSpawner.ResetSpawner();
-
-    // 🔁 Réinitialiser le joueur
-    if (playerController != null && planetSpawner != null)
     {
-        playerController.ResetPlayer(planetSpawner.startPlanet.transform);
+        Debug.Log("↩️ Retour au menu demandé");
+
+        // 🔁 Réinitialiser état du jeu
+        gameRunning = false;
+        gameStartedOnce = false;
+        gameScore = 0;
+        UpdateScoreDisplay();
+
+        // 🔁 Réinitialiser les planètes
+        if (planetSpawner != null)
+            planetSpawner.ResetSpawner();
+
+        // 🔁 Réinitialiser le joueur
+        if (playerController != null && planetSpawner != null)
+        {
+            playerController.ResetPlayer(planetSpawner.startPlanet.transform);
+        }
+
+        PlayerController.SetHasJumped(false);
+
+        // 🔁 Réinitialiser l’UI
+        scoreButton.gameObject.SetActive(false);
+        ShowMenuUI();
+
+        // 🔁 Reconnecter le bouton Start (au cas où)
+        startButton.onClick.RemoveAllListeners();
+        startButton.onClick.AddListener(TriggerStart);
+
+        Debug.Log("✅ Tout est prêt pour un nouveau départ");
     }
-
-    PlayerController.SetHasJumped(false);
-
-    // 🔁 Réinitialiser l’UI
-    scoreButton.gameObject.SetActive(false);
-    ShowMenuUI();
-
-    // 🔁 Reconnecter le bouton Start (au cas où)
-    startButton.onClick.RemoveAllListeners();
-    startButton.onClick.AddListener(TriggerStart);
-
-    Debug.Log("✅ Tout est prêt pour un nouveau départ");
-}
-
 
     void ShowMenuUI()
     {

@@ -118,15 +118,34 @@ public class PlayerController : MonoBehaviour
 
             if (moveInput != 0)
             {
-                // Rotation around the planet
+                // Calculate rotation angle
                 float rotationAmount = -moveInput * moveSpeed * Time.deltaTime;
-                transform.position = Quaternion.Euler(0, 0, rotationAmount) *
-                                    (transform.position - currentPlanet.position) +
-                                    currentPlanet.position;
-
-                // Make sure the player stays on the surface
-                KeepPlayerOnPlanetSurface();
-
+                
+                // Rotate the player around the planet
+                Vector2 dirToPlayer = (transform.position - currentPlanet.position);
+                Vector2 rotatedDir = Quaternion.Euler(0, 0, rotationAmount) * dirToPlayer;
+                
+                // Get the normalized direction for orientation
+                Vector2 newDirNormalized = rotatedDir.normalized;
+                
+                // Calculate the new position based on the planet and player colliders
+                CircleCollider2D planetCollider = currentPlanet.GetComponent<CircleCollider2D>();
+                CircleCollider2D playerCollider = GetComponent<CircleCollider2D>();
+                
+                if (planetCollider != null && playerCollider != null)
+                {
+                    float planetRadius = planetCollider.radius * currentPlanet.transform.localScale.x;
+                    float playerRadius = playerCollider.radius * transform.localScale.x;
+                    
+                    // Set the position exactly at the correct distance
+                    Vector2 newPosition = (Vector2)currentPlanet.position + newDirNormalized * (planetRadius + playerRadius);
+                    transform.position = newPosition;
+                    
+                    // Orient the player perpendicular to the planet surface
+                    float angle = Mathf.Atan2(newDirNormalized.y, newDirNormalized.x) * Mathf.Rad2Deg;
+                    transform.rotation = Quaternion.Euler(0, 0, angle - 90f);
+                }
+                
                 // Animation
                 animator.SetBool("isMoving", true);
             }
@@ -191,6 +210,7 @@ public class PlayerController : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
+        Debug.Log($"⚡ Trigger avec {other.tag}");
         // Landing on a planet
         if (other.CompareTag("Planet") && isJumping)
         {
@@ -198,39 +218,6 @@ public class PlayerController : MonoBehaviour
             AttachToPlanet(planet);
         }
     }
-
-    public void ResetPlayer(Transform startPlanet)
-    {
-        currentPlanet = startPlanet;
-        isJumping = false;
-        firstJumpExecuted = false;
-        SetHasJumped(false);
-
-        // Sécurité rigide : forcer la position et la rotation du joueur
-        Vector3 directionFromCenter = Vector3.up;
-        float planetRadius = currentPlanet.GetComponent<CircleCollider2D>().radius * currentPlanet.localScale.x;
-        float offset = GetComponent<SpriteRenderer>().bounds.extents.y * surfaceOffsetMultiplier;
-        transform.position = currentPlanet.position + directionFromCenter * (planetRadius + offset);
-
-        float angle = Mathf.Atan2(directionFromCenter.y, directionFromCenter.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(0, 0, angle - 90f);
-
-        // Reset rigidbody
-        if (rb != null)
-        {
-            rb.linearVelocity = Vector2.zero;
-            rb.angularVelocity = 0f;
-            rb.gravityScale = 0f;
-            rb.freezeRotation = true;
-        }
-
-        animator.SetBool("isJumping", false);
-        animator.SetBool("isMoving", false);
-
-        Debug.Log("✅ Joueur repositionné sur la planète de départ.");
-    }
-
-
 
     void AttachToPlanet(Transform planet)
     {
@@ -245,14 +232,6 @@ public class PlayerController : MonoBehaviour
         if (landingSound != null && audioSource != null)
         {
             audioSource.PlayOneShot(landingSound);
-        }
-        
-        // Check for special planet effects
-        Planet planetScript = planet.GetComponent<Planet>();
-        if (planetScript != null && planetScript.isSpecialPlanet)
-        {
-            // Apply special effect
-            planetScript.ApplySpecialEffect(this);
         }
 
         // Establish parent-child relationship
@@ -287,7 +266,8 @@ public class PlayerController : MonoBehaviour
             dirToPlayer = Vector2.up;
         }
 
-        // Exact position where the circles are tangent
+        // IMPORTANT: Position directly based on colliders, not sprite pivot
+        // Keep a fixed distance from planet surface to player collider
         Vector2 tangentPosition = (Vector2)currentPlanet.position + dirToPlayer * (planetRadius + playerRadius);
         
         // Apply the position
@@ -301,5 +281,69 @@ public class PlayerController : MonoBehaviour
     public static void SetHasJumped(bool value)
     {
         HasJumped = value;
+    }
+
+    public void ResetPlayer(Transform startPlanet)
+    {
+        // Safety check for null reference
+        if (startPlanet == null)
+        {
+            Debug.LogError("❌ ResetPlayer: startPlanet is null!");
+            return;
+        }
+
+        currentPlanet = startPlanet;
+        isJumping = false;
+        firstJumpExecuted = false;
+        SetHasJumped(false);
+
+        // Make the player a child of the planet
+        transform.SetParent(currentPlanet);
+
+        // Reset rigidbody first to prevent physics interactions during repositioning
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+            rb.gravityScale = 0f;
+            rb.freezeRotation = true;
+        }
+
+        // FIXED POSITIONING: Force specific initial position
+        CircleCollider2D planetCollider = currentPlanet.GetComponent<CircleCollider2D>();
+        CircleCollider2D playerCollider = GetComponent<CircleCollider2D>();
+        
+        if (planetCollider != null && playerCollider != null)
+        {
+            // Calculate real radii
+            float planetRadius = planetCollider.radius * currentPlanet.localScale.x;
+            float playerRadius = playerCollider.radius * transform.localScale.x;
+            
+            // Position player at the top of the planet (12 o'clock position)
+            Vector2 upDirection = Vector2.up;
+            Vector2 planetPosition = currentPlanet.position;
+            
+            // Position based on colliders, not sprite pivot
+            Vector2 playerPosition = planetPosition + upDirection * (planetRadius + playerRadius);
+            transform.position = playerPosition;
+            
+            // Force upright orientation (facing upward)
+            transform.rotation = Quaternion.Euler(0, 0, 0);
+        }
+        else
+        {
+            // Emergency fallback position if colliders aren't found
+            transform.position = currentPlanet.position + Vector3.up * 2f;
+            transform.rotation = Quaternion.identity;
+        }
+
+        // Reset animation
+        if (animator != null)
+        {
+            animator.SetBool("isJumping", false);
+            animator.SetBool("isMoving", false);
+        }
+        
+        Debug.Log("✅ Player repositioned on start planet");
     }
 }

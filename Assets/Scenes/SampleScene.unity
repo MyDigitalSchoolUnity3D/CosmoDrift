@@ -576,9 +576,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aca29af0b28ab4c16b4f5c818537a3a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 100
-  jumpForce: 5
+  moveSpeed: 80
+  jumpForce: 4
   surfaceOffsetMultiplier: 1
+  landingSound: {fileID: 0}
+  jumpSound: {fileID: 0}
 --- !u!50 &279575233
 Rigidbody2D:
   serializedVersion: 5
@@ -706,11 +708,11 @@ Transform:
   m_GameObject: {fileID: 279575230}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.4, y: -7.976691, z: -5}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0.0022662804, y: 0.6160143, z: 0.5619669}
+  m_LocalScale: {x: 0.11331396, y: 0.11386587, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1442377598}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &319550252
 GameObject:
@@ -1352,13 +1354,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   planetPrefab: {fileID: 6465703942335476191, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
   startPlanet: {fileID: 1442377594}
-  maxPlanets: 9
-  minSpawnDistance: 6
-  minPlanetSize: 3
-  maxPlanetSize: 3
-  startPlanetInitialPosition: {x: 0, y: 0, z: 0}
-  minFallSpeed: 0.3
-  maxFallSpeed: 0.7
+  maxPlanets: 3
+  minSpawnDistance: 5
+  minPlanetSize: 0.2
+  maxPlanetSize: 1.3
+  minFallSpeed: 0.2
+  maxFallSpeed: 1.2
+  arcadeMode: 1
+  columns: 3
+  verticalSpacing: 4
+  horizontalVariation: 0.2
+  initialHeight: 5
+  planetTextures:
+  - {fileID: 21300000, guid: 7d2cee50e1f934f33aed91cf7bf2f6ec, type: 3}
+  - {fileID: 21300000, guid: d32db3468ebbd414cb245d1b1a4dc0b9, type: 3}
 --- !u!4 &676934458
 Transform:
   m_ObjectHideFlags: 0
@@ -1455,7 +1464,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 3, y: 316.98877}
+  m_AnchoredPosition: {x: 15, y: 312.99}
   m_SizeDelta: {x: 1500, y: 299.9775}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &730981531
@@ -1633,8 +1642,8 @@ MonoBehaviour:
   startButton: {fileID: 1777731622}
   leaveButton: {fileID: 1744459051}
   scoreButton: {fileID: 1601451399}
-  bestScoreTextButton: {fileID: 162367311}
-  bestScoreDecor: {fileID: 730981529}
+  bestScoreTextButton: {fileID: 730981531}
+  bestScoreDecor: {fileID: 162367309}
   scoreMultiplier: 1
 --- !u!4 &919955533
 Transform:
@@ -1744,7 +1753,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 1
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 330585545}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -1775,11 +1784,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4903303720051321706, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.49
+      value: 0.3
       objectReference: {fileID: 0}
     - target: {fileID: 4903303720051321706, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -12.28
+      value: -11.5
       objectReference: {fileID: 0}
     - target: {fileID: 4903303720051321706, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
       propertyPath: m_LocalPosition.z
@@ -1821,14 +1830,26 @@ PrefabInstance:
       propertyPath: m_TagString
       value: StartPlanet
       objectReference: {fileID: 0}
+    - target: {fileID: 7845107444433310893, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
+      propertyPath: m_Radius
+      value: 0.48
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4903303720051321706, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 279575236}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
 --- !u!1 &1442377594 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6465703942335476191, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
+  m_PrefabInstance: {fileID: 1442377593}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1442377598 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4903303720051321706, guid: d409e5a5cf0454f3faee0e0eefbc24cc, type: 3}
   m_PrefabInstance: {fileID: 1442377593}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1601451397
@@ -2260,12 +2281,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46899e26ea43ae24fbb5598c59eccb84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scrollSpeed: 1
+  scrollSpeed: 2
   backgroundPrefab: {fileID: 3714219536088849604, guid: c92a7d913b65f0f4eba903e09a038f9e, type: 3}
   backgroundSprites:
-  - {fileID: 21300000, guid: bd3a6eb5d6b74e54595f10d8354fc75f, type: 3}
-  - {fileID: 21300000, guid: f40ba4caedc7ead4ab374bd372db3e76, type: 3}
-  - {fileID: 21300000, guid: 35313af049b4a2f42a0325330c51d74a, type: 3}
+  - {fileID: 0}
 --- !u!4 &1846286553
 Transform:
   m_ObjectHideFlags: 0
@@ -2696,7 +2715,6 @@ SceneRoots:
   - {fileID: 919955533}
   - {fileID: 608491680}
   - {fileID: 676934458}
-  - {fileID: 279575236}
   - {fileID: 1442377593}
   - {fileID: 695483788}
   - {fileID: 1846286553}

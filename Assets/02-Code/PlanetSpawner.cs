@@ -1,66 +1,68 @@
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 
 public class PlanetSpawner : MonoBehaviour
 {
+    // References
     public GameObject planetPrefab;
     public GameObject startPlanet;
+    
+    // Configuration générale
+    [Header("Configuration générale")]
     public int maxPlanets = 3;
-    public float minSpawnDistance = 6f;
+    public float minSpawnDistance = 5f;
     public float minPlanetSize = 0.8f;
     public float maxPlanetSize = 1.5f;
-    public Vector3 startPlanetInitialPosition; // à stocker au départ
-
-
-    // Paramètres de vitesse de chute
-    [Header("Fall Speed Configuration")]
-    [Range(0.1f, 2.0f)] public float minFallSpeed = 0.3f;
-    [Range(0.1f, 2.0f)] public float maxFallSpeed = 0.7f;
-
+    [Range(0.1f, 2.0f)] public float minFallSpeed = 0.2f;
+    [Range(0.1f, 2.0f)] public float maxFallSpeed = 1.2f;
+    
+    // Configuration style arcade
+    [Header("Configuration Arcade")]
+    public bool arcadeMode = true;
+    [Range(1, 3)] public int columns = 3;
+    [Range(2, 6)] public float verticalSpacing = 4f;
+    [Range(0f, 1f)] public float horizontalVariation = 0.2f;
+    public float initialHeight = 5f;
+    
+    // Textures
+    [Header("Textures")]
+    public List<Sprite> planetTextures = new List<Sprite>();
+    
+    // Variables privées
     private List<GameObject> planets = new List<GameObject>();
+    private Vector3 startPlanetInitialPosition;
     private bool gameStarted = false;
+    private Camera mainCamera;
+    private int spawnCounter = 0;
+
+    private void Awake() {
+        // Cache la référence à la caméra principale
+        mainCamera = Camera.main;
+    }
 
     void Start()
-{
-    if (startPlanet != null)
     {
-        startPlanetInitialPosition = startPlanet.transform.position;
-        startPlanet.tag = "StartPlanet";
-        planets.Add(startPlanet);
-    }
-}
-
-public void ResetSpawner()
-{
-    foreach (GameObject planet in planets)
-    {
-        if (planet != null && planet != startPlanet)
+        if (startPlanet != null)
         {
-            Destroy(planet);
+            startPlanetInitialPosition = startPlanet.transform.position;
+            startPlanet.tag = "StartPlanet";
+            planets.Add(startPlanet);
         }
     }
 
-    planets.Clear();
-
-    if (startPlanet != null)
-    {
-        startPlanet.transform.position = startPlanetInitialPosition;
-        startPlanet.transform.rotation = Quaternion.identity;
-        planets.Add(startPlanet);
-    }
-
-    gameStarted = false;
-}
     void Update()
     {
         if (!gameStarted) return;
 
-        // Nettoyer la liste des planètes détruites
-        planets.RemoveAll(planet => planet == null);
+        // Enlever les planètes nulles (détruites)
+        for (int i = planets.Count - 1; i >= 0; i--)
+        {
+            if (planets[i] == null)
+                planets.RemoveAt(i);
+        }
 
-        // Toujours avoir un certain nombre de planètes actives
-        if (planets.Count < maxPlanets)
+        // Maintenir le nombre de planètes
+        while (planets.Count < maxPlanets)
         {
             SpawnPlanet();
         }
@@ -69,9 +71,10 @@ public void ResetSpawner()
     public void StartGame()
     {
         gameStarted = true;
-
-        // Spawn d'une nouvelle planète pour que le joueur ait une destination
-        while (planets.Count < maxPlanets)
+        spawnCounter = 0;
+        
+        // Générer les planètes initiales
+        for (int i = 0; i < maxPlanets; i++)
         {
             SpawnPlanet();
         }
@@ -79,102 +82,120 @@ public void ResetSpawner()
 
     public void OnPlayerFirstJump()
     {
-        Debug.Log("🟢 PlanetSpawner: Premier saut détecté, les planètes commencent à tomber");
-
-        int planetsCount = 0;
-        int fallingPlanets = 0;
-
-        // Activer la descente de TOUTES les planètes, y compris la planète de départ
-        foreach (GameObject planet in planets)
+        for (int i = 0; i < planets.Count; i++)
         {
-            if (planet != null)
+            GameObject planet = planets[i];
+            if (planet != null && planet != startPlanet)
             {
-                planetsCount++;
-                Debug.Log($"🟢 Demande à la planète {planet.name} de tomber");
-                Planet planetScript = planet.GetComponent<Planet>();
-                if (planetScript != null)
-                {
-                    planetScript.StartFalling();
-                    fallingPlanets++;
-                }
+                planet.GetComponent<Planet>()?.StartFalling();
             }
         }
-
-        Debug.Log($"🟢 Résumé: {planetsCount} planètes trouvées, {fallingPlanets} vont tomber");
-
-        // Force-set HasJumped pour les nouvelles planètes
-        PlayerController.SetHasJumped(true);
     }
 
     void SpawnPlanet()
     {
-        Vector3 spawnPosition = GetValidSpawnPosition();
+        Vector3 spawnPosition = GetArcadeSpawnPosition();
+        
         GameObject newPlanet = Instantiate(planetPrefab, spawnPosition, Quaternion.identity);
-
         Planet planetComponent = newPlanet.GetComponent<Planet>();
+        
         if (planetComponent != null)
         {
-            // Générer une taille aléatoire seulement pour les nouvelles planètes
-            float randomSize = Random.Range(minPlanetSize, maxPlanetSize);
-            float speed = Random.Range(10f, 30f);
-
-            // Définir une vitesse de chute aléatoire dans la plage configurée
+            float size = Random.Range(minPlanetSize, maxPlanetSize);
+            float rotationSpeed = Random.Range(10f, 30f);
             float fallSpeed = Random.Range(minFallSpeed, maxFallSpeed);
-
-            // Initialiser la planète avec tous les paramètres
-            planetComponent.Initialize(speed, randomSize, fallSpeed);
-
-            // Si le jeu est déjà en cours et premier saut fait, faire tomber immédiatement
+            
+            Sprite texture = planetTextures.Count > 0 
+                ? planetTextures[Random.Range(0, planetTextures.Count)] 
+                : null;
+            
+            newPlanet.tag = "Planet";
+            planetComponent.Initialize(rotationSpeed, size, fallSpeed, texture);
+            
+            // Faire tomber immédiatement si le jeu est déjà en cours
             if (gameStarted && PlayerController.HasJumped)
             {
                 planetComponent.StartFalling();
             }
+            
+            planets.Add(newPlanet);
         }
-
-        planets.Add(newPlanet);
     }
 
-    Vector3 GetValidSpawnPosition()
+    Vector3 GetArcadeSpawnPosition()
     {
-        Camera cam = Camera.main;
-        if (cam == null) return Vector3.zero;
-
-        float camHeight = 2f * cam.orthographicSize;
-        float camWidth = camHeight * cam.aspect;
-
-        // Zone de spawn - Forcer le spawn dans la caméra
-        float minX = cam.transform.position.x - camWidth / 2 + 2;
-        float maxX = cam.transform.position.x + camWidth / 2 - 2;
-        float minY = cam.transform.position.y;
-        float maxY = cam.transform.position.y + camHeight / 2 - 1;
-
-        for (int attempt = 0; attempt < 15; attempt++)
+        if (!mainCamera) mainCamera = Camera.main;
+        if (!mainCamera) return new Vector3(0, 10, 0);  // Fallback
+        
+        float camHeight = 2f * mainCamera.orthographicSize;
+        float camWidth = camHeight * mainCamera.aspect;
+        float screenTop = mainCamera.transform.position.y + camHeight/2;
+        
+        // Position verticale au-dessus de l'écran
+        float spawnY = screenTop + 3f;
+        
+        // En mode arcade: diviser l'écran en colonnes
+        float columnWidth = camWidth / columns;
+        int column = spawnCounter % columns;
+        spawnCounter++;
+        
+        // Position horizontale au centre de la colonne + variation aléatoire
+        float midX = mainCamera.transform.position.x - camWidth/2 + columnWidth * (column + 0.5f);
+        float variation = columnWidth * horizontalVariation;
+        float spawnX = midX + Random.Range(-variation, variation);
+        
+        // Vérifier que la nouvelle position n'est pas trop proche d'une planète existante
+        Vector3 position = new Vector3(spawnX, spawnY, 0);
+        
+        // S'il y a collision, ajuster vers le haut
+        int safetyCounter = 0;
+        while (IsTooCloseToOtherPlanets(position) && safetyCounter < 10)
         {
-            float spawnX = Random.Range(minX, maxX);
-            float spawnY = Random.Range(minY, maxY);
-            Vector3 spawnPosition = new Vector3(spawnX, spawnY, 0);
-
-            bool validPosition = true;
-            foreach (GameObject planet in planets)
+            position.y += verticalSpacing / 2;
+            safetyCounter++;
+        }
+        
+        return position;
+    }
+    
+    bool IsTooCloseToOtherPlanets(Vector3 position)
+    {
+        foreach (GameObject planet in planets)
+        {
+            if (planet == null) continue;
+            if (Vector3.Distance(position, planet.transform.position) < minSpawnDistance)
             {
-                if (planet != null && Vector3.Distance(spawnPosition, planet.transform.position) < minSpawnDistance)
-                {
-                    validPosition = false;
-                    break;
-                }
-            }
-
-            if (validPosition)
-            {
-                return spawnPosition;
+                return true;
             }
         }
+        return false;
+    }
 
-        // Position par défaut
-        return new Vector3(
-            cam.transform.position.x + Random.Range(-2f, 2f),
-            cam.transform.position.y + camHeight / 3,
-            0
-        );
+    public void ResetSpawner()
+    {
+        // Supprimer toutes les planètes sauf la planète de départ
+        for (int i = planets.Count - 1; i >= 0; i--)
+        {
+            GameObject planet = planets[i];
+            if (planet != null && planet != startPlanet)
+            {
+                Destroy(planet);
+                planets.RemoveAt(i);
+            }
+        }
+        
+        // Vider la liste et réajouter la planète de départ
+        planets.Clear();
+        
+        if (startPlanet != null)
+        {
+            startPlanet.transform.position = startPlanetInitialPosition;
+            startPlanet.transform.rotation = Quaternion.identity;
+            planets.Add(startPlanet);
+        }
+        
+        gameStarted = false;
+        spawnCounter = 0;
     }
 }
+
