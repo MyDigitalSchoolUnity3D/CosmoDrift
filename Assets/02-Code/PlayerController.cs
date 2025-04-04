@@ -2,27 +2,17 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    // Movement parameters
     public float moveSpeed = 80f;
     public float jumpForce = 4f;
     public float surfaceOffsetMultiplier = 1.0f;
-
-    // References
     private Transform currentPlanet;
     private Rigidbody2D rb;
     private Animator animator;
-
-    // States
     private bool isJumping = false;
     private bool firstJumpExecuted = false;
-
-    // Event for the first jump
     public delegate void PlayerActionHandler();
     public static event PlayerActionHandler OnFirstJump;
-
-    // Static variable for GameManager
     public static bool HasJumped { get; private set; } = false;
-
     [Header("Audio")]
     public AudioClip landingSound;
     public AudioClip jumpSound;
@@ -41,7 +31,7 @@ public class PlayerController : MonoBehaviour
             rb.freezeRotation = true;
         }
 
-        // Attach to the starting planet
+        //planète de depart
         PlanetSpawner spawner = FindFirstObjectByType<PlanetSpawner>();
         if (spawner != null && spawner.startPlanet != null)
         {
@@ -82,7 +72,7 @@ public class PlayerController : MonoBehaviour
     {
         if (currentPlanet == null) return;
 
-        // Player movement on the planet
+        // Mouvement du joueur sur la planète
         if (!isJumping)
         {
             float moveInput = Input.GetAxis("Horizontal");

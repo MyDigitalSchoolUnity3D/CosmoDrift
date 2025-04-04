@@ -2,22 +2,16 @@ using UnityEngine;
 
 public class Planet : MonoBehaviour
 {
-    // Configuration
     public float rotationSpeed = 10f;
     public float fallSpeed = 0.5f;
     public float planetSize = 1f;
-    public bool preventDestruction = false;  // Empêcher la destruction de la planète
-    
-    // État
+    public bool preventDestruction = false;  
     private bool rotatingRight;
     private bool gameStarted = false;
     private bool isStartPlanet = false;
     private SpriteRenderer spriteRenderer;
     private CircleCollider2D circleCollider;
     private Camera mainCamera;
-    
-    // Cache
-    private float screenBottom;
     private float spriteRadius;
     
     void Awake()

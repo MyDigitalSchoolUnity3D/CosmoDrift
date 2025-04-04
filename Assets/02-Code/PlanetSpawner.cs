@@ -3,15 +3,12 @@ using System.Collections.Generic;
 
 public class PlanetSpawner : MonoBehaviour
 {
-    // References
     public GameObject planetPrefab;
     public GameObject startPlanet;
     
-    // Ajouter un préfab pour la planète de départ (ou utiliser le préfab normal)
     [Header("Start Planet")]
-    public GameObject startPlanetPrefab; // Préfab optionnel pour la planète de départ
+    public GameObject startPlanetPrefab; 
     
-    // Configuration générale
     [Header("Configuration générale")]
     public int maxPlanets = 3;
     public float minSpawnDistance = 5f;
@@ -20,7 +17,6 @@ public class PlanetSpawner : MonoBehaviour
     [Range(0.1f, 2.0f)] public float minFallSpeed = 0.2f;
     [Range(0.1f, 2.0f)] public float maxFallSpeed = 1.2f;
     
-    // Configuration style arcade
     [Header("Configuration Arcade")]
     public bool arcadeMode = true;
     [Range(1, 3)] public int columns = 3;
@@ -28,11 +24,9 @@ public class PlanetSpawner : MonoBehaviour
     [Range(0f, 1f)] public float horizontalVariation = 0.2f;
     public float initialHeight = 5f;
     
-    // Textures
     [Header("Textures")]
     public List<Sprite> planetTextures = new List<Sprite>();
     
-    // Variables privées
     private List<GameObject> planets = new List<GameObject>();
     private Vector3 startPlanetInitialPosition;
     private bool gameStarted = false;
@@ -40,7 +34,6 @@ public class PlanetSpawner : MonoBehaviour
     private int spawnCounter = 0;
 
     private void Awake() {
-        // Cache la référence à la caméra principale
         mainCamera = Camera.main;
     }
 
@@ -157,7 +150,7 @@ public class PlanetSpawner : MonoBehaviour
     Vector3 GetArcadeSpawnPosition()
     {
         if (!mainCamera) mainCamera = Camera.main;
-        if (!mainCamera) return new Vector3(0, 10, 0);  // Fallback
+        if (!mainCamera) return new Vector3(0, 10, 0);  
         
         float camHeight = 2f * mainCamera.orthographicSize;
         float camWidth = camHeight * mainCamera.aspect;
@@ -166,7 +159,7 @@ public class PlanetSpawner : MonoBehaviour
         // Position verticale au-dessus de l'écran
         float spawnY = screenTop + 3f;
         
-        // En mode arcade: diviser l'écran en colonnes
+        // En mode arcade: divise l'écran en colonnes
         float columnWidth = camWidth / columns;
         int column = spawnCounter % columns;
         spawnCounter++;
@@ -210,8 +203,6 @@ public class PlanetSpawner : MonoBehaviour
         // et non pas seulement désactivée
         if (startPlanet == null)
         {
-            Debug.Log("⚠️ La planète de départ a été détruite, recréation en cours...");
-            
             // Utiliser le préfab spécifique s'il existe, sinon utiliser le préfab normal
             GameObject prefabToUse = startPlanetPrefab != null ? startPlanetPrefab : planetPrefab;
             
@@ -228,7 +219,6 @@ public class PlanetSpawner : MonoBehaviour
                 planetComponent.ApplyPlanetSize();
             }
             
-            Debug.Log("✅ Planète de départ recréée avec succès");
         }
         else if (!startPlanet.activeSelf)
         {
@@ -243,7 +233,6 @@ public class PlanetSpawner : MonoBehaviour
                 planetComponent.ResetPlanet();
             }
             
-            Debug.Log("✅ Planète de départ réactivée");
         }
     }
 

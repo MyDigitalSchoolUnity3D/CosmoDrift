@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 using TMPro;
 
 public class GameManager : MonoBehaviour
@@ -32,17 +31,8 @@ public class GameManager : MonoBehaviour
             player = playerObj.transform;
             playerController = player.GetComponent<PlayerController>();
         }
-        else
-        {
-            Debug.LogError("❌ Aucun objet avec le tag 'Player' trouvé !");
-        }
 
         planetSpawner = FindFirstObjectByType<PlanetSpawner>();
-        if (planetSpawner == null)
-        {
-            Debug.LogError("❌ Aucun PlanetSpawner trouvé dans la scène !");
-        }
-
         startButton.onClick.AddListener(TriggerStart);
         leaveButton.onClick.AddListener(QuitGame);
 
@@ -81,39 +71,25 @@ public class GameManager : MonoBehaviour
     {
         try
         {
-            // Reset the player first, before setting game flags
             if (playerController == null || planetSpawner == null || planetSpawner.startPlanet == null)
                 return;
 
-            // First just update UI to show we're starting
             HideMenuUI();
             scoreButton.gameObject.SetActive(true);
-
-            // Now reset the player
             playerController.ResetPlayer(planetSpawner.startPlanet.transform);
-
-            // Update game state
             gameRunning = true;
             gameScore = 0;
             UpdateScoreDisplay();
-
-            // Start planets AFTER player is reset - simplification: toutes les planètes commencent à tomber sauf la planète de départ
             planetSpawner.StartGame(startPlanetFalls: false);
 
             // Marquer que le jeu a commencé
             PlayerController.SetHasJumped(false);  // Le premier saut n'a pas encore eu lieu
             
-            Debug.Log("Jeu démarré - Attente du premier saut du joueur");
         }
         catch (System.Exception e)
-        {
-            // Log de l'erreur pour faciliter le debug
-            Debug.LogError($"Erreur lors du démarrage du jeu: {e.Message}\n{e.StackTrace}");
-            
-            // Reset game state if we hit an error
+        {            
+            // Reset le jeu si system.exception
             gameStartedOnce = false;
-
-            // Show UI again
             ShowMenuUI();
             scoreButton.gameObject.SetActive(false);
         }
@@ -123,14 +99,12 @@ public class GameManager : MonoBehaviour
     {
         if (player == null || Camera.main == null)
         {
-            Debug.LogError("❌ Player ou Camera.main est null dans CheckPlayerOutOfBounds()");
             return;
         }
         
         Vector3 viewPos = Camera.main.WorldToViewportPoint(player.position);
         if (viewPos.x < 0 || viewPos.x > 1 || viewPos.y < 0 || viewPos.y > 1)
         {
-            Debug.Log("💥 Le joueur est sorti de l’écran !");
             SaveBestScore();
             gameRunning = false;
             ReturnToMenu();
@@ -139,21 +113,17 @@ public class GameManager : MonoBehaviour
 
     void ReturnToMenu()
     {
-        Debug.Log("↩️ Retour au menu demandé");
-
         // 🔁 Réinitialiser état du jeu
         gameRunning = false;
         gameStartedOnce = false;
         gameScore = 0;
         UpdateScoreDisplay();
 
-        // 🔁 Réinitialiser les planètes en premier (pour recréer la planète de départ si nécessaire)
+        // Réinitialiser les planètes en premier (pour recréer la planète de départ si nécessaire)
         if (planetSpawner != null)
             planetSpawner.ResetSpawner();
-        else
-            Debug.LogError("❌ PlanetSpawner est null lors de ReturnToMenu()");
 
-        // 🔁 Vérifier que la planète de départ existe maintenant
+        // Vérifier que la planète de départ existe maintenant
         if (planetSpawner != null && planetSpawner.startPlanet != null)
         {
             // Réinitialiser le joueur seulement si on a la planète de départ
@@ -161,27 +131,18 @@ public class GameManager : MonoBehaviour
             {
                 playerController.ResetPlayer(planetSpawner.startPlanet.transform);
             }
-            else
-            {
-                Debug.LogError("❌ PlayerController est null lors de ReturnToMenu()");
-            }
-        }
-        else
-        {
-            Debug.LogError("❌ Planète de départ toujours null après ResetSpawner()");
+           
         }
 
         PlayerController.SetHasJumped(false);
 
-        // 🔁 Réinitialiser l’UI
+        // Réinitialiser l’UI
         scoreButton.gameObject.SetActive(false);
         ShowMenuUI();
 
-        // 🔁 Reconnecter le bouton Start (au cas où)
+        // Reconnecter le bouton Start (au cas où)
         startButton.onClick.RemoveAllListeners();
         startButton.onClick.AddListener(TriggerStart);
-
-        Debug.Log("✅ Tout est prêt pour un nouveau départ");
     }
 
     void ShowMenuUI()
@@ -202,13 +163,8 @@ public class GameManager : MonoBehaviour
 
     void UpdateScore()
     {
-        float playerHeight = player.position.y;
-        float newScore = Mathf.Max(gameScore, playerHeight * scoreMultiplier);
-        if (newScore > gameScore)
-        {
-            gameScore = newScore;
-            UpdateScoreDisplay();
-        }
+        gameScore += Time.deltaTime * scoreMultiplier;
+        UpdateScoreDisplay();
     }
 
     void UpdateScoreDisplay()
@@ -247,7 +203,6 @@ public class GameManager : MonoBehaviour
 
     public void QuitGame()
     {
-        Debug.Log("🛑 Quitter le jeu");
         Application.Quit();
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
